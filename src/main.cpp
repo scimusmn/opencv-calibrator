@@ -44,7 +44,9 @@ void printHelp()
               << "  -n NUM        Capture NUM images before running" << std::endl
               << "  -x WIDTH      Calibration chessboard width" << std::endl
               << "  -y HEIGHT     Calibration chessboard height" <<std::endl
-              << "  -e NUM        Calibration chessboard square size (arb. units)" << std::endl;
+              << "  -e NUM        Calibration chessboard square size (arb. units)" << std::endl
+              << "  -f FILENAME   Name of the file to save the calibration into; defaults" << std::endl
+              << "                to 'calibration.yaml'" << std::endl;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
