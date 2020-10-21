@@ -17,13 +17,14 @@ extern "C" {
 void printHelp()
 {
     std::cout << "Usage:"
-	      << std::endl
-	      << "  -h            Show this help message" << std::endl
-	      << "  -s            Show images while processing" << std::endl
-	      << "  -c ID         Capture images from camera ID rather than command line" << std::endl
-	      << "  -n NUM        Capture NUM images before running" << std::endl
-	      << "  -x WIDTH      Calibration chessboard width" << std::endl
-	      << "  -y HEIGHT     Calibration chessboard height" <<std::endl;
+              << std::endl
+              << "  -h            Show this help message" << std::endl
+              << "  -s            Show images while processing" << std::endl
+              << "  -c ID         Capture images from camera ID rather than command line" << std::endl
+              << "  -n NUM        Capture NUM images before running" << std::endl
+              << "  -x WIDTH      Calibration chessboard width" << std::endl
+              << "  -y HEIGHT     Calibration chessboard height" <<std::endl
+              << "  -e NUM        Calibration chessboard square size (arb. units)" << std::endl;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -223,7 +224,7 @@ std::vector<std::vector<cv::Point3f>> getObjectPoints(int nObjects,
 {
     std::vector<cv::Point3f> corners;
     for (int i=0; i<boardSize.height; i++) {
-        for (int j=0; j<boardSize.width; i++) {
+        for (int j=0; j<boardSize.width; j++) {
             corners.push_back(cv::Point3f(j*squareSize, i*squareSize, 0));
         }
     }
