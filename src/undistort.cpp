@@ -144,6 +144,27 @@ void showCamera(int cameraId, cv::Mat map1, cv::Mat map2)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+void showImages(std::vector<std::string> imageFiles, cv::Mat map1, cv::Mat map2)
+{
+    for (int i=0; i<imageFiles.size(); i++) {
+        std::string filename = imageFiles[i];
+        cv::Mat raw = cv::imread(filename);
+        if (raw.empty()) {
+            std::cout << "failed to read "
+                      << filename
+                      << "; skipping..." << std::endl;
+            continue;
+        }
+        cv::Mat undist;
+        cv::remap(raw, undist, map1, map2, cv::INTER_LINEAR);
+        cv::imshow(filename, undist);
+        cv::waitKey();
+        cv::destroyWindow(filename);
+    }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 int main(int argc, char** argv)
 {
     int camera;
@@ -165,7 +186,7 @@ int main(int argc, char** argv)
         showCamera(camera, map1, map2);
     }
     else {
-        //todo
+        showImages(imageFiles, map1, map2);
     }
 
     return 0;
