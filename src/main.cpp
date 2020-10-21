@@ -20,6 +20,7 @@ struct calibration
     cv::Mat distCoeffs;
     std::vector<cv::Mat> rvecs;
     std::vector<cv::Mat> tvecs;
+    cv::Size imageSize;
 
     void save(std::string filename)
     {
@@ -27,6 +28,7 @@ struct calibration
 
         fs << "cameraMatrix" << cameraMatrix;
         fs << "distCoeffs" << distCoeffs;
+        fs << "imageSize" << imageSize;
 
         fs.release();
     }
@@ -45,7 +47,7 @@ void printHelp()
               << "  -x WIDTH      Calibration chessboard width" << std::endl
               << "  -y HEIGHT     Calibration chessboard height" <<std::endl
               << "  -e NUM        Calibration chessboard square size (arb. units)" << std::endl
-              << "  -f FILENAME   Name of the file to save the calibration into; defaults" << std::endl
+              << "  -o FILENAME   Name of the file to save the calibration into; defaults" << std::endl
               << "                to 'calibration.yaml'" << std::endl;
 }
 
@@ -266,6 +268,7 @@ struct calibration getCalibration(std::vector<std::vector<cv::Point2f>> imagePoi
 
     cal.cameraMatrix = cv::Mat::eye(3,3, CV_64F);
     cal.distCoeffs = cv::Mat::zeros(8, 1, CV_64F);
+    cal.imageSize = imageSize;
 
     double rms = cv::calibrateCameraRO(objectPoints,
                                        imagePoints,
