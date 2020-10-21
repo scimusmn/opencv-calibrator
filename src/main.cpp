@@ -14,6 +14,26 @@ extern "C" {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+struct calibration
+{
+    cv::Mat cameraMatrix;
+    cv::Mat distCoeffs;
+    std::vector<cv::Mat> rvecs;
+    std::vector<cv::Mat> tvecs;
+
+    void save(std::string filename)
+    {
+        cv::FileStorage fs(filename, cv::FileStorage::WRITE);
+
+        fs << "cameraMatrix" << cameraMatrix;
+        fs << "distCoeffs" << distCoeffs;
+
+        fs.release();
+    }
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 void printHelp()
 {
     std::cout << "Usage:"
@@ -56,7 +76,7 @@ bool parseOptions(int argc, char** argv,
 
     showImages = false;
     showHelp = false;
-    
+
     board_width = 6;
     board_height = 9;
     squareSize = 1.0f;
@@ -75,7 +95,7 @@ bool parseOptions(int argc, char** argv,
             printHelp();
             showHelp = true;
             break;
-	    
+
         case 'o':
             file = std::string(optarg);
             break;
@@ -105,14 +125,14 @@ bool parseOptions(int argc, char** argv,
                           << std::endl;
             }
             break;
-                
+
         case '?':
             std::cerr << "Unknown option -"
                       << optopt
                       << "; ignoring..."
                       << std::endl;
             break;
-	    
+
         default:
             return false;
         }
@@ -122,7 +142,7 @@ bool parseOptions(int argc, char** argv,
         files.push_back(std::string(argv[i]));
     }
 
-    return true;    
+    return true;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -140,7 +160,7 @@ bool getCameraImages(std::vector<cv::Mat>& images,
     cv::Mat frame, display;
     std::string text = "0/";
     text += std::to_string(nImages);
-    
+
     while (images.size() < nImages) {
         camera >> frame;
         frame.copyTo(display);
@@ -164,7 +184,7 @@ bool getCameraImages(std::vector<cv::Mat>& images,
 std::vector<cv::Mat> getFileImages(std::vector<std::string> imageFiles)
 {
     std::vector<cv::Mat> images;
-    
+
     for (int i=0; i<imageFiles.size(); i++) {
         cv::Mat img = cv::imread(imageFiles[i], cv::IMREAD_GRAYSCALE);
         if (img.empty()) {
@@ -187,11 +207,11 @@ std::vector<std::vector<cv::Point2f>> getImagePoints(std::vector<cv::Mat> images
                                                      bool showImages)
 {
     std::vector<std::vector<cv::Point2f>> imagePoints;
-    
+
     for (int i=0; i<images.size(); i++) {
         cv::Mat img = images[i];
         std::vector<cv::Point2f> points;
-        
+
         bool patternFound = cv::findChessboardCorners(img,
                                                       boardSize,
                                                       points);
@@ -204,10 +224,10 @@ std::vector<std::vector<cv::Point2f>> getImagePoints(std::vector<cv::Mat> images
                                               30, 0.1));
             imagePoints.push_back(points);
         }
-        
+
         if (showImages) {
             cv::drawChessboardCorners(img, boardSize, cv::Mat(points), patternFound);
-				  
+
             cv::imshow("Frame", img);
             cv::waitKey();
         }
@@ -231,6 +251,36 @@ std::vector<std::vector<cv::Point3f>> getObjectPoints(int nObjects,
 
     std::vector<std::vector<cv::Point3f>> objectPoints(nObjects, corners);
     return objectPoints;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+struct calibration getCalibration(std::vector<std::vector<cv::Point2f>> imagePoints,
+                                  std::vector<std::vector<cv::Point3f>> objectPoints,
+                                  cv::Size imageSize,
+                                  bool& calibrationOk)
+{
+    struct calibration cal;
+
+    cal.cameraMatrix = cv::Mat::eye(3,3, CV_64F);
+    cal.distCoeffs = cv::Mat::zeros(8, 1, CV_64F);
+
+    double rms = cv::calibrateCameraRO(objectPoints,
+                                       imagePoints,
+                                       imageSize,
+                                       -1,
+                                       cal.cameraMatrix,
+                                       cal.distCoeffs,
+                                       cal.rvecs,
+                                       cal.tvecs,
+                                       cv::noArray(),
+                                       0);
+
+    calibrationOk = cv::checkRange(cal.cameraMatrix) && cv::checkRange(cal.distCoeffs);
+
+    std::cout << "RMS error: " << rms << std::endl;
+
+    return cal;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -272,7 +322,7 @@ int main(int argc, char** argv)
 
     // get calibration images
     std::vector<cv::Mat> images;
-    
+
     if (camera >= 0) {
         getCameraImages(images, camera, n_images);
     }
@@ -292,7 +342,19 @@ int main(int argc, char** argv)
 
     std::vector<std::vector<cv::Point3f>>
         objectPoints = getObjectPoints(imagePoints.size(), cv::Size(width, height), squareSize);
-    
+\
+    bool ok;
+    struct calibration cal = getCalibration(imagePoints,
+                                            objectPoints,
+                                            cv::Size(images[0].cols, images[0].rows),
+                                            ok);
+    if (!ok) {
+        std::cerr << "ERROR: calibration failed!" << std::endl;
+        return 3;
+    }
+
+    cal.save(settingsfile);
+
     return 0;
 }
 
